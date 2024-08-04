@@ -5,10 +5,12 @@ let botonAgregar = document.getElementById("agregar");
 let espacioCards = document.getElementById("card-container");
 let cartaSeleccionada;
 let cartaEditada;
+let id = 1;
 
 //Clase Task tiene atributos y metodos
 class Task {
-  constructor(titulo, descripcion) {
+  constructor(id,titulo, descripcion) {
+    this.id = id;
     this.titulo = titulo;
     this.descripcion = descripcion;
   }
@@ -29,7 +31,7 @@ class Task {
 class UI {
   mostrarCardsLocalStorage = (array) => {
     espacioCards.innerHTML = "";
-    if (array.length > 0) {
+    if (array && array.length > 0) {
       array.forEach((item) => {
         espacioCards.innerHTML += `
             <div class='card mt-2'>
@@ -41,8 +43,8 @@ class UI {
                         <p>${item.descripcion}</p>
                     </div>
                     <div class="form-group">
-                        <button class='btn btn-warning' id="editar">Edit</button>
-                        <button class='btn btn-danger' id='${item.titulo}'>Delete</button>
+                        <button class='btn btn-warning' id='${item.id}'>Edit</button>
+                        <button class='btn btn-danger' id='${item.id}'>Delete</button>
                     </div>
                 </div>
             </div>`;
@@ -50,31 +52,29 @@ class UI {
     }
   };
 
-  eliminarCarta = () => {
-    let array = JSON.parse(localStorage.getItem("tareas"));
-    if (array.length > 0) {
-      array.forEach((item, i) => {
-        if (item.titulo === cartaSeleccionada) {
-          array.splice(i, 1);
-        }
-        localStorage.setItem("tareas", JSON.stringify(array));
-      });
-    }
+  eliminarCarta = (cartaSeleccionada) => {
+    let arrayFromLocalStorage = JSON.parse(localStorage.getItem("tareas"));
+    arrayFromLocalStorage.forEach((item,i)=>{
+      if(item.id == cartaSeleccionada){
+        arrayFromLocalStorage.splice(i,1)
+      }
+    })
+    localStorage.setItem("tareas",JSON.stringify(arrayFromLocalStorage))
+    this.mostrarCardsLocalStorage(arrayFromLocalStorage)
   };
 
-  editarCarta = (card, titulo, descripcion) => {
-    let arrayFromLocal = JSON.parse(localStorage.getItem("tareas"));
-    if (arrayFromLocal.length > 0) {
-      arrayFromLocal.forEach((item) => {
-        if (item.titulo === card.tituloTask) {
-          item.titulo = titulo;
-          item.descripcion = descripcion;
-        }
-        localStorage.setItem("tareas", JSON.stringify(arrayFromLocal));
-      });
-    }
-  };
-}
+  editarCarta = () => {
+    let arrayFromLocalStorage = JSON.parse(localStorage.getItem("tareas"));
+    arrayFromLocalStorage.forEach(item=>{
+      if(item.id==cartaEditada.id){
+        item.titulo = titulo.value
+        item.descripcion = descripcion.value
+      }
+    })
+    localStorage.setItem("tareas",JSON.stringify(arrayFromLocalStorage))
+  }
+};
+
 
 //A partir que el usuario clickee el boton agregar tenemos los datos de la clase Task
 //y mostramos por pantalla
@@ -82,9 +82,10 @@ botonAgregar.addEventListener("click", (e) => {
   e.preventDefault();
   let tituloTask = titulo.value;
   let descripcionTask = descripcion.value;
+  let newId = id ++;
   let ui = new UI();
   if (e.target.innerText === "Add Task") {
-    let newTask = new Task(tituloTask, descripcionTask);
+    let newTask = new Task(newId,tituloTask, descripcionTask);
     let array = [];
     array.push(newTask);
     newTask.agregar(array);
@@ -93,38 +94,31 @@ botonAgregar.addEventListener("click", (e) => {
     let arrayLocalStorage = JSON.parse(localStorage.getItem("tareas"));
     ui.mostrarCardsLocalStorage(arrayLocalStorage);
   } else {
-    ui.editarCarta(cartaEditada, tituloTask, descripcionTask);
-    let arrayLocalStorage = JSON.parse(localStorage.getItem("tareas"));
-    ui.mostrarCardsLocalStorage(arrayLocalStorage);
-    titulo.value = "";
-    descripcion.value = "";
-    botonAgregar.innerText = "Add Task";
+    ui.editarCarta(cartaSeleccionada);
+    let arrEditada = JSON.parse(localStorage.getItem("tareas"))
+    ui.mostrarCardsLocalStorage(arrEditada)
+    titulo.value = ""
+    descripcion.value = ""
+    botonAgregar.innerText="Add Task"
   }
 });
 
 //Seleccionamos una card para luego eliminarla o editarla dependiendo el id
 document.addEventListener("click", (e) => {
-  cartaSeleccionada = e.target.id;
+  let texto = e.target.innerText
   let ui = new UI();
-  ui.eliminarCarta();
-  let arrayLocalStorage = JSON.parse(localStorage.getItem("tareas"));
-  ui.mostrarCardsLocalStorage(arrayLocalStorage);
-  if (e.target.id === "editar") {
-    let tituloCarta =
-      e.target.parentElement.parentElement.parentElement.childNodes[1].childNodes[0].data.replace(
-        "\n",
-        ""
-      );
-    let descripcionCarta =
-      e.target.parentElement.parentElement.childNodes[1].childNodes[1]
-        .innerText;
-    titulo.value = tituloCarta.trim();
-    descripcion.value = descripcionCarta;
-    botonAgregar.innerText = "Edit";
-    cartaEditada = {
-      tituloTask: tituloCarta.trim(),
-      descripcionTask: descripcionCarta,
-    };
+  cartaSeleccionada = e.target.id;
+  if(texto === "Delete"){
+    ui.eliminarCarta(cartaSeleccionada)
+  }else{
+    let arrayFromLocal = JSON.parse(localStorage.getItem("tareas"));
+    let cartaSeleccionadaFormulario =  arrayFromLocal?.length > 0 && arrayFromLocal.find(it => it.id ==  cartaSeleccionada)
+    if(cartaSeleccionadaFormulario){
+      titulo.value = cartaSeleccionadaFormulario.titulo;
+      descripcion.value = cartaSeleccionadaFormulario.descripcion;
+      cartaEditada = cartaSeleccionadaFormulario
+      botonAgregar.innerText = "Edit Task";
+    }
   }
 });
 
@@ -132,6 +126,12 @@ document.addEventListener("click", (e) => {
 //guardadas
 window.addEventListener("load", () => {
   let arrayLocalStorage = JSON.parse(localStorage.getItem("tareas"));
+  titulo.value = ""
+  descripcion.value = ""
+  cartaSeleccionada = null;
+  cartaEditada = null;
   let ui = new UI();
-  ui.mostrarCardsLocalStorage(arrayLocalStorage);
+  if(arrayLocalStorage && arrayLocalStorage.length>0){
+    ui.mostrarCardsLocalStorage(arrayLocalStorage);
+  }
 });
