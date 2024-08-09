@@ -5,7 +5,8 @@ let botonAgregar = document.getElementById("agregar");
 let espacioCards = document.getElementById("card-container");
 let cartaSeleccionada;
 let cartaEditada;
-let id = 1;
+let items = JSON.parse(localStorage.getItem("tareas"));
+let id = items?.length >0 ? parseInt(items[items.length-1].id+1) : 1
 
 //Clase Task tiene atributos y metodos
 class Task {
